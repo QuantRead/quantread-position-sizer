@@ -39,10 +39,12 @@
             <div class="form-group">
                 <label class="form-label">Ticker Symbol</label>
                 <input type="text" id="ticker" class="form-input" placeholder="e.g. TSLA" maxlength="10" autocomplete="off" spellcheck="false" style="text-transform:uppercase">
+                <span class="form-help">Any US stock ticker. We pull live price and volatility data automatically.</span>
             </div>
             <div class="form-group">
                 <label class="form-label">Account Size ($)</label>
                 <input type="number" id="account" class="form-input" value="10000" min="100" step="100">
+                <span class="form-help">Your total trading account balance. Used to cap position size and calculate risk %.</span>
             </div>
             <div class="form-group">
                 <label class="form-label">Risk Per Trade</label>
@@ -50,6 +52,7 @@
                     <input type="range" id="risk" min="0.5" max="3.0" step="0.1" value="1.5" oninput="updateSlider('risk','risk-val','%')">
                     <span class="slider-value" id="risk-val">1.5%</span>
                 </div>
+                <span class="form-help">Max % of your account you're willing to lose on this trade. 1-2% is standard risk management.</span>
             </div>
             <div class="form-group">
                 <label class="form-label">Stop Loss (ATR Multiple)</label>
@@ -57,6 +60,7 @@
                     <input type="range" id="stop-mult" min="1.0" max="3.0" step="0.1" value="1.5" oninput="updateSlider('stop-mult','stop-val','x')">
                     <span class="slider-value" id="stop-val">1.5x</span>
                 </div>
+                <span class="form-help">How far below entry to set your stop. 1.5x ATR means the stop is 1.5 times the stock's average daily range.</span>
             </div>
             <div class="form-group">
                 <label class="form-label">Reward : Risk Ratio</label>
@@ -64,6 +68,7 @@
                     <input type="range" id="rr" min="1.0" max="4.0" step="0.1" value="2.0" oninput="updateSlider('rr','rr-val',':1')">
                     <span class="slider-value" id="rr-val">2.0:1</span>
                 </div>
+                <span class="form-help">Target profit vs. risk. 2:1 means you aim to make $2 for every $1 you risk.</span>
             </div>
             <div class="form-group">
                 <label class="form-label" style="opacity:0">_</label>
@@ -71,6 +76,31 @@
                     <span class="btn-label">Calculate Position</span>
                     <span class="loader"></span>
                 </button>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="how-it-works">
+            <h3>How ATR Position Sizing Works</h3>
+            <div class="how-grid">
+                <div class="how-step">
+                    <div class="how-num">1</div>
+                    <div class="how-text">
+                        <strong>ATR measures volatility.</strong> The Average True Range (14-day) tells you how much a stock moves per day in dollars. A $100 stock with a $5 ATR moves ~$5/day on average.
+                    </div>
+                </div>
+                <div class="how-step">
+                    <div class="how-num">2</div>
+                    <div class="how-text">
+                        <strong>Your stop is based on ATR.</strong> Instead of guessing where to place your stop, we use the ATR multiple. This gives the trade enough room to breathe without getting stopped out by normal price movement.
+                    </div>
+                </div>
+                <div class="how-step">
+                    <div class="how-num">3</div>
+                    <div class="how-text">
+                        <strong>Shares are calculated from risk.</strong> If you risk 1.5% of $10,000 ($150) and your stop distance is $7.50, you buy exactly 20 shares. The math removes emotion from the decision.
+                    </div>
+                </div>
             </div>
         </div>
 

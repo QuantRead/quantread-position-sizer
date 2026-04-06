@@ -228,11 +228,39 @@ input[type="range"]::-webkit-slider-thumb {
 .footer { text-align: center; padding: 32px; font-size: .8rem; color: var(--text-muted); }
 .footer a { color: var(--accent-blue); text-decoration: none; }
 
+/* ── Form Help Text ──────────────────────────────────────── */
+.form-help {
+    font-size: .75rem; color: var(--text-muted); line-height: 1.4;
+    margin-top: 2px;
+}
+
+/* ── How It Works ────────────────────────────────────────── */
+.how-it-works {
+    margin: 8px 0 40px; padding: 32px;
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 14px;
+}
+.how-it-works h3 {
+    font-size: 1.1rem; font-weight: 700; margin-bottom: 20px;
+    color: var(--text-primary);
+}
+.how-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.how-step { display: flex; gap: 12px; align-items: flex-start; }
+.how-num {
+    flex-shrink: 0; width: 28px; height: 28px;
+    background: rgba(78,124,255,.15); color: var(--accent-blue);
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: .8rem; font-weight: 700;
+}
+.how-text { font-size: .85rem; color: var(--text-secondary); line-height: 1.5; }
+.how-text strong { color: var(--text-primary); }
+
 /* ── Responsive ──────────────────────────────────────────── */
 @media (max-width: 768px) {
     .hero h1 { font-size: 1.7rem; }
     .form-grid { grid-template-columns: 1fr; }
     .big-cards { grid-template-columns: 1fr; }
     .detail-grid { grid-template-columns: 1fr; }
+    .how-grid { grid-template-columns: 1fr; }
     .container { padding: 24px 16px 60px; }
 }
