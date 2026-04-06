@@ -42,9 +42,15 @@ def get_stock_data(ticker: str) -> dict:
         atr_14 = sum(tr_list[-14:]) / 14 if len(tr_list) >= 14 else sum(tr_list) / len(tr_list)
         current_price = float(close.iloc[-1])
 
-        # Get company name
-        info = stock.info
-        name = info.get("shortName", info.get("longName", ticker.upper()))
+        # Get company name (info can be None on rate-limited servers)
+        try:
+            info = stock.info
+            if info and isinstance(info, dict):
+                name = info.get("shortName", info.get("longName", ticker.upper()))
+            else:
+                name = ticker.upper()
+        except Exception:
+            name = ticker.upper()
 
         # Volume data for context
         vol = hist["Volume"]
@@ -151,6 +157,8 @@ def index():
 @app.route("/api/calculate", methods=["POST"])
 def api_calculate():
     data = request.json
+    if not data:
+        return jsonify({"error": "Invalid request body"}), 400
     ticker = data.get("ticker", "").strip().upper()
     account_size = float(data.get("account_size", 10000))
     risk_pct = float(data.get("risk_pct", 1.5)) / 100.0
