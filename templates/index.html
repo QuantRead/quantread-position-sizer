@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuantRead Position Sizer — Free ATR Position Size Calculator</title>
+    <meta name="description" content="Calculate exactly how many shares to buy based on your account size and real-time ATR volatility. Same math used by our automated trading system.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div class="bg-glow"></div>
+
+    <nav class="nav" id="nav">
+        <div class="nav-inner">
+            <a href="https://quantread.app" class="nav-logo">
+                <span class="logo-q">Q</span>uantRead
+            </a>
+            <div class="nav-links">
+                <a href="https://quantread-ticker-grader.onrender.com" class="nav-link">Ticker Grader</a>
+                <a href="https://quantread.app/indicators" class="nav-link">Indicators</a>
+                <a href="https://quantread.app" class="nav-cta">Get the Suite — $49</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Hero -->
+        <div class="hero">
+            <div class="hero-badge">⚡ Same math as our live trading bot</div>
+            <h1>How Many Shares Should You Buy?</h1>
+            <p>Enter your account size and a ticker. We'll calculate the exact position size, stop loss, and profit target using real-time ATR volatility data.</p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Ticker Symbol</label>
+                <input type="text" id="ticker" class="form-input" placeholder="e.g. TSLA" maxlength="10" autocomplete="off" spellcheck="false" style="text-transform:uppercase">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Account Size ($)</label>
+                <input type="number" id="account" class="form-input" value="10000" min="100" step="100">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Risk Per Trade</label>
+                <div class="slider-row">
+                    <input type="range" id="risk" min="0.5" max="3.0" step="0.1" value="1.5" oninput="updateSlider('risk','risk-val','%')">
+                    <span class="slider-value" id="risk-val">1.5%</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Stop Loss (ATR Multiple)</label>
+                <div class="slider-row">
+                    <input type="range" id="stop-mult" min="1.0" max="3.0" step="0.1" value="1.5" oninput="updateSlider('stop-mult','stop-val','x')">
+                    <span class="slider-value" id="stop-val">1.5x</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Reward : Risk Ratio</label>
+                <div class="slider-row">
+                    <input type="range" id="rr" min="1.0" max="4.0" step="0.1" value="2.0" oninput="updateSlider('rr','rr-val',':1')">
+                    <span class="slider-value" id="rr-val">2.0:1</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="opacity:0">_</label>
+                <button class="calc-btn" id="calc-btn" onclick="calculate()">
+                    <span class="btn-label">Calculate Position</span>
+                    <span class="loader"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <div class="results" id="results">
+            <div class="result-header">
+                <div class="result-ticker" id="r-ticker"></div>
+                <div class="result-name" id="r-name"></div>
+                <div class="result-price" id="r-price"></div>
+            </div>
+
+            <!-- Big 3 Cards -->
+            <div class="big-cards">
+                <div class="big-card">
+                    <div class="big-card-label">Shares to Buy</div>
+                    <div class="big-card-value blue" id="r-shares"></div>
+                    <div class="big-card-sub" id="r-position-value"></div>
+                </div>
+                <div class="big-card">
+                    <div class="big-card-label">Max Loss</div>
+                    <div class="big-card-value red" id="r-max-loss"></div>
+                    <div class="big-card-sub" id="r-risk-pct"></div>
+                </div>
+                <div class="big-card">
+                    <div class="big-card-label">Max Gain</div>
+                    <div class="big-card-value green" id="r-max-gain"></div>
+                    <div class="big-card-sub" id="r-rr"></div>
+                </div>
+            </div>
+
+            <!-- Stop & Target Cards -->
+            <div class="detail-grid">
+                <div class="detail-card stop">
+                    <div class="detail-label">Stop Loss Price</div>
+                    <div class="detail-value red" id="r-stop"></div>
+                    <div class="detail-sub" id="r-stop-dist"></div>
+                </div>
+                <div class="detail-card target">
+                    <div class="detail-label">Take Profit Price</div>
+                    <div class="detail-value green" id="r-target"></div>
+                    <div class="detail-sub" id="r-target-dist"></div>
+                </div>
+            </div>
+
+            <!-- Price Bar Visualization -->
+            <div class="price-bar-container" id="price-bar-container"></div>
+
+            <!-- Risk Meter -->
+            <div class="risk-meter">
+                <div class="risk-meter-label">Account Risk Exposure</div>
+                <div class="risk-meter-bar">
+                    <div class="risk-meter-fill" id="risk-meter-fill"></div>
+                </div>
+                <div class="risk-meter-text" id="risk-meter-text"></div>
+            </div>
+
+            <!-- ATR Data -->
+            <div class="detail-grid" style="margin-top:24px">
+                <div class="detail-card">
+                    <div class="detail-label">ATR (14-Day)</div>
+                    <div class="detail-value yellow" id="r-atr"></div>
+                    <div class="detail-sub" id="r-atr-pct"></div>
+                </div>
+                <div class="detail-card">
+                    <div class="detail-label">Position % of Account</div>
+                    <div class="detail-value blue" id="r-pos-pct"></div>
+                    <div class="detail-sub" id="r-pos-sub"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="cta-section">
+            <h2>Want to <span style="color:var(--accent-green)">grade the stock</span> before you size the trade?</h2>
+            <p>The free QuantRead Ticker Grader gives you an instant conviction score combining EMA Ribbon, RVOL, RSI, ATR, Momentum, and Trend analysis.</p>
+            <div class="cta-features">
+                <span class="cta-feature">Free — no signup</span>
+                <span class="cta-feature">Real-time data</span>
+                <span class="cta-feature">Same engine as our trading bot</span>
+            </div>
+            <a href="https://quantread-ticker-grader.onrender.com" class="cta-btn">Try the Ticker Grader — Free →</a>
+            <div class="cta-disclaimer">No credit card. No signup. Grade any stock instantly.</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <a href="https://quantread.app">quantread.app</a> · Position sizing powered by ATR volatility analysis
+        </div>
+    </div>
+
+    <script>
+        // Slider update helper
+        function updateSlider(inputId, labelId, suffix) {
+            const val = document.getElementById(inputId).value;
+            document.getElementById(labelId).textContent = val + suffix;
+        }
+
+        // Enter key trigger
+        document.getElementById('ticker').addEventListener('keydown', e => {
+            if (e.key === 'Enter') calculate();
+        });
+
+        async function calculate() {
+            const ticker = document.getElementById('ticker').value.trim().toUpperCase();
+            if (!ticker) return;
+
+            const btn = document.getElementById('calc-btn');
+            btn.classList.add('loading');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/calculate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticker,
+                        account_size: parseFloat(document.getElementById('account').value),
+                        risk_pct: parseFloat(document.getElementById('risk').value),
+                        stop_mult: parseFloat(document.getElementById('stop-mult').value),
+                        rr_ratio: parseFloat(document.getElementById('rr').value),
+                    })
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    alert(data.error);
+                    return;
+                }
+
+                renderResults(data);
+            } catch (err) {
+                alert('Error fetching data. Please try again.');
+                console.error(err);
+            } finally {
+                btn.classList.remove('loading');
+                btn.disabled = false;
+            }
+        }
+
+        function renderResults(d) {
+            // Header
+            document.getElementById('r-ticker').textContent = d.ticker;
+            document.getElementById('r-name').textContent = d.name;
+            document.getElementById('r-price').textContent = '$' + d.price.toLocaleString(undefined, {minimumFractionDigits:2});
+
+            // Big cards
+            document.getElementById('r-shares').textContent = d.shares.toLocaleString();
+            document.getElementById('r-position-value').textContent = '$' + d.position_value.toLocaleString(undefined, {minimumFractionDigits:2}) + ' position';
+            document.getElementById('r-max-loss').textContent = '-$' + d.max_loss.toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('r-risk-pct').textContent = d.risk_of_account + '% of account';
+            document.getElementById('r-max-gain').textContent = '+$' + d.max_gain.toLocaleString(undefined, {minimumFractionDigits:2});
+            document.getElementById('r-rr').textContent = d.reward_risk_ratio + ':1 R/R';
+
+            // Stop & target
+            document.getElementById('r-stop').textContent = '$' + d.stop_loss_price.toFixed(2);
+            document.getElementById('r-stop-dist').textContent = '-$' + d.stop_distance.toFixed(2) + ' (' + d.stop_pct + '%)';
+            document.getElementById('r-target').textContent = '$' + d.take_profit_price.toFixed(2);
+            document.getElementById('r-target-dist').textContent = '+$' + d.target_distance.toFixed(2) + ' (' + d.target_pct + '%)';
+
+            // ATR
+            document.getElementById('r-atr').textContent = '$' + d.atr_14.toFixed(2);
+            document.getElementById('r-atr-pct').textContent = d.atr_pct + '% of price';
+            document.getElementById('r-pos-pct').textContent = d.position_pct + '%';
+            document.getElementById('r-pos-sub').textContent = '$' + d.position_value.toLocaleString() + ' of $' + parseFloat(document.getElementById('account').value).toLocaleString();
+
+            // Price bar visualization
+            const barHtml = buildPriceBar(d.stop_loss_price, d.price, d.take_profit_price);
+            document.getElementById('price-bar-container').innerHTML = barHtml;
+
+            // Risk meter
+            const riskPct = d.risk_of_account;
+            const fill = document.getElementById('risk-meter-fill');
+            const meterWidth = Math.min(riskPct / 5 * 100, 100);
+            fill.style.width = meterWidth + '%';
+
+            let meterColor, meterText;
+            if (riskPct <= 1.0) { meterColor = 'var(--accent-green)'; meterText = 'Conservative — Well within safe limits'; }
+            else if (riskPct <= 2.0) { meterColor = 'var(--accent-blue)'; meterText = 'Standard — Healthy risk management'; }
+            else if (riskPct <= 3.0) { meterColor = 'var(--accent-yellow)'; meterText = 'Aggressive — Monitor closely'; }
+            else { meterColor = 'var(--accent-red)'; meterText = 'Dangerous — Consider reducing size'; }
+            fill.style.background = meterColor;
+            document.getElementById('risk-meter-text').innerHTML = `<span style="color:${meterColor}">${riskPct}%</span> — ${meterText}`;
+
+            // Show results
+            document.getElementById('results').classList.add('visible');
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function buildPriceBar(stop, entry, target) {
+            const range = target - stop;
+            const entryOffset = ((entry - stop) / range * 100);
+            return `
+                <div class="price-bar-labels">
+                    <span style="color:var(--accent-red);font-family:var(--font-mono)">Stop $${stop.toFixed(2)}</span>
+                    <span style="color:var(--accent-green);font-family:var(--font-mono)">Target $${target.toFixed(2)}</span>
+                </div>
+                <div class="price-bar">
+                    <div class="price-bar-fill-loss" style="width:${entryOffset}%"></div>
+                    <div class="price-bar-fill-gain" style="width:${100-entryOffset}%;left:${entryOffset}%"></div>
+                    <div class="price-bar-entry" style="left:${entryOffset}%">
+                        <div class="price-bar-entry-label">Entry $${entry.toFixed(2)}</div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
